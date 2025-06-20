@@ -135,6 +135,12 @@ class SecondOrder(ContinualModel):
             self.pretraining_classifier.to_device(self.device)
         else:
             self.pretraining_classifier.to(self.device)
+        
+        # Also ensure the main classifier is on the correct device
+        if hasattr(self.net.vit.head, 'to_device'):
+            self.net.vit.head.to_device(self.device)
+        else:
+            self.net.vit.head.to(self.device)
 
         self.buffergrad = None
         self.buffergrad_cls = None
