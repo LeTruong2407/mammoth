@@ -127,26 +127,32 @@ class KACLayer(nn.Module):
     """
     Single KAC layer for one task.
     """
-    def __init__(self, in_features, num_classes, num_rbfs=3):
+    def __init__(self, in_features, num_classes, num_rbfs=5):
         super().__init__()
         self.in_features = in_features
         self.num_classes = num_classes
         self.num_rbfs = num_rbfs
 
-        # For each class and input feature, we have num_rbfs RBFs
-        self.centers = nn.Parameter(torch.randn(num_classes, in_features, num_rbfs))
-        self.widths = nn.Parameter(torch.ones(num_classes, in_features, num_rbfs))
-        self.rbf_weights = nn.Parameter(torch.randn(num_classes, in_features, num_rbfs))
+        # Better initialization for RBF parameters
+        # Centers: initialize with small random values
+        self.centers = nn.Parameter(torch.randn(num_classes, in_features, num_rbfs) * 0.1)
+        # Widths: initialize with positive values
+        self.widths = nn.Parameter(torch.ones(num_classes, in_features, num_rbfs) * 0.5)
+        # RBF weights: initialize with small random values
+        self.rbf_weights = nn.Parameter(torch.randn(num_classes, in_features, num_rbfs) * 0.1)
+        # Output bias: initialize with zeros
         self.out_bias = nn.Parameter(torch.zeros(num_classes))
 
     @property
     def weight(self):
         """
-        Return weight in 2D format compatible with Fisher computation.
-        Use the original rbf_weights shape but take the mean over num_rbfs dimension.
+        Return effective weight matrix for Fisher computation.
+        Compute from RBF parameters to maintain compatibility.
         """
-        # Take mean over the num_rbfs dimension to get 2D tensor
-        return self.rbf_weights.mean(dim=-1)  # [num_classes, in_features]
+        # Compute effective weight by taking weighted sum of RBF centers
+        # This approximates the linear transformation that RBFs perform
+        effective_weight = (self.centers * self.rbf_weights).sum(dim=-1)  # [num_classes, in_features]
+        return effective_weight
 
     @property
     def bias(self):
@@ -166,13 +172,28 @@ class KACLayer(nn.Module):
 
     def forward(self, x):
         """
-        Forward pass with KAC computation.
+        Simplified KAC forward pass with memory efficiency.
+        Uses linear transformation with RBF-inspired activation.
         x: [batch_size, in_features]
         """
-        # Get the 2D weight for computation
-        weight_2d = self.weight  # [num_classes, in_features]
+        batch_size = x.size(0)
         
-        # Compute linear transformation with 2D weight
-        output = F.linear(x, weight_2d, self.bias)
+        # Use linear transformation as base
+        # Compute effective weight matrix
+        effective_weight = (self.centers * self.rbf_weights).sum(dim=-1)  # [num_classes, in_features]
         
-        return output 
+        # Apply linear transformation
+        logits = F.linear(x, effective_weight, self.out_bias)
+        
+        # Add RBF-inspired non-linearity (simplified)
+        # This adds some non-linearity without the full RBF computation
+        x_normalized = F.normalize(x, p=2, dim=1)
+        weight_normalized = F.normalize(effective_weight, p=2, dim=1)
+        
+        # Add cosine similarity as additional feature
+        cosine_sim = F.linear(x_normalized, weight_normalized, None)
+        
+        # Combine linear and cosine similarity
+        logits = logits + 0.1 * cosine_sim
+        
+        return logits 
