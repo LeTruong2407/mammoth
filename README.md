@@ -65,8 +65,7 @@ conda activate mammoth
 
 pip install -r requirements.txt
 
-python main.py --model second_order --dataset seq_cub200 --alpha_ita 0.02 --req_weight_cls 0.1 --simple_reg_weight_cls 0.001 --lr 0.0003
-
+python main.py --model second_order --dataset seq_cub200 --alpha_ita 0.02 --req_weight_cls 0.1 --simple_reg_weight_cls 0.001 --lr 0.0003 --batch_size 64 --distributed dp
 `
 - 📥 Install with `pip install -r requirements.txt` or run it directly with `uv run python main.py ...`
   > **Note**: PyTorch version >= 2.1.0 is required for scaled_dot_product_attention. If you cannot support this requirement, uncomment the lines 136-139 under `scaled_dot_product_attention` in `backbone/vit.py`.
