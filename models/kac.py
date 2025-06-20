@@ -103,6 +103,15 @@ class KACClassifier(nn.Module):
             out.append(self.heads[ti](fc_inp))
         return torch.cat(out, dim=1)
 
+    def to_device(self, device):
+        """
+        Move all parameters to the specified device.
+        """
+        self.to(device)
+        for head in self.heads:
+            head.to(device)
+        return self
+
 
 class KACLayer(nn.Module):
     """
