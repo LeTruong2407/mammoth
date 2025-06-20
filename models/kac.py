@@ -57,9 +57,17 @@ class KACClassifier(nn.Module):
     def assign(self, other):
         """
         Copy parameters from another KACClassifier.
+        Handle cases where structures might be different.
         """
-        for p_self, p_other in zip(self.parameters(), other.parameters()):
-            p_self.data.copy_(p_other.data)
+        # If the other classifier has a different structure, we need to be careful
+        if isinstance(other, KACClassifier):
+            # Copy the state dict, which should handle the parameter copying
+            self.load_state_dict(other.state_dict())
+        else:
+            # Fallback: try to copy parameters directly
+            for p_self, p_other in zip(self.parameters(), other.parameters()):
+                if p_self.shape == p_other.shape:
+                    p_self.data.copy_(p_other.data)
 
     def backup(self):
         """
