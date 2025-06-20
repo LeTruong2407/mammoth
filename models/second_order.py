@@ -1,3 +1,5 @@
+
+
 # Copyright 2020-present, Pietro Buzzega, Matteo Boschini, Angelo Porrello, Davide Abati, Simone Calderara.
 # All rights reserved.
 # This source code is licensed under the license found in the
@@ -24,6 +26,7 @@ from models.lora_prototype_utils.utils import create_optimizer
 from models.lora_prototype_utils.utils import get_dist
 from models.lora_prototype_utils.utils import AlignmentLoss
 from models.lora_prototype_utils.utils import linear_probing_epoch
+from models.kac import KACClassifier
 
 
 def int_or_all(x):
@@ -104,7 +107,17 @@ class SecondOrder(ContinualModel):
         args.req_weight_cls = args.req_weight_cls if args.req_weight_cls is not None else \
             (args.beta_iel if args.use_iel else args.alpha_ita)
 
-        backbone = Model(args, dataset, backbone)
+        # Create the LoRA-wrapped model. Type ignore is intentional: Model is a wrapper with .vit as the backbone.
+        backbone = Model(args, dataset, backbone)  # type: ignore[assignment]
+        # --- KAC integration ---
+        # If the backbone has a vit attribute and set_classifier_head method, replace the head with KACClassifier
+        if hasattr(backbone, 'vit') and hasattr(backbone.vit, 'set_classifier_head'):
+            in_features = backbone.vit.embed_dim
+            # Use the number of classes per task for the first head
+            num_classes_per_task = getattr(dataset, 'N_CLASSES_PER_TASK', 20)  # Default to 20 for CUB-200
+            kac_head = KACClassifier(in_features, num_classes_per_task)  # num_rbfs defaults to 3
+            backbone.vit.set_classifier_head(kac_head)
+        # --- end KAC integration ---
         super().__init__(backbone, loss, args, transform, dataset=dataset)
 
         self.output_dim = backbone.output_dim
@@ -483,3 +496,4 @@ class SecondOrder(ContinualModel):
         log_dict['loss'] = loss.item()
 
         return log_dict
+
