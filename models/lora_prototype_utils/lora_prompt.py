@@ -65,9 +65,11 @@ class Model(torch.nn.Module):
             for n, p in param_lored.items()
         })
 
+        # Initialize fisher_dict_cls with the weight and bias properties for compatibility
+        current_head = self.vit.head.heads[self.current_task]
         self.fisher_dict_cls = torch.nn.ModuleDict({
-            n: UnbiasedFisherModule(p, args.req_weight_cls)
-            for n, p in self.vit.head.heads[self.current_task].named_parameters()
+            'weight': UnbiasedFisherModule(current_head.weight, args.req_weight_cls),
+            'bias': UnbiasedFisherModule(current_head.bias, args.req_weight_cls)
         })
 
         self.logsoft = torch.nn.LogSoftmax(dim=1)
@@ -78,10 +80,11 @@ class Model(torch.nn.Module):
         self.tuner.set_current_task(task_id)
 
         if self.current_task > 0:
-            device = self.fisher_dict_cls.weight.unnormalized_fisher.device
+            device = self.fisher_dict_cls['weight'].unnormalized_fisher.device
+            current_head = self.vit.head.heads[self.current_task]
             self.fisher_dict_cls.update({
-                n: UnbiasedFisherModule(p, self.req_weight_cls).to(device)
-                for n, p in self.vit.head.heads[self.current_task].named_parameters()
+                'weight': UnbiasedFisherModule(current_head.weight, self.req_weight_cls).to(device),
+                'bias': UnbiasedFisherModule(current_head.bias, self.req_weight_cls).to(device)
             })
 
     def init_tuner(self, args, seq_dataset):
