@@ -1,5 +1,3 @@
-
-
 # Copyright 2020-present, Pietro Buzzega, Matteo Boschini, Angelo Porrello, Davide Abati, Simone Calderara.
 # All rights reserved.
 # This source code is licensed under the license found in the
@@ -132,6 +130,11 @@ class SecondOrder(ContinualModel):
         self.custom_scheduler = self.get_scheduler()
         self.alignment_loss = AlignmentLoss(self.dataset, self.device)
         self.pretraining_classifier = deepcopy(self.net.vit.head)
+        # Ensure pretraining_classifier is on the correct device
+        if hasattr(self.pretraining_classifier, 'to_device'):
+            self.pretraining_classifier.to_device(self.device)
+        else:
+            self.pretraining_classifier.to(self.device)
 
         self.buffergrad = None
         self.buffergrad_cls = None
