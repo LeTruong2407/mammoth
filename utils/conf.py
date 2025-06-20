@@ -1,3 +1,4 @@
+
 """
 This module contains utility functions for configuration settings.
 """
@@ -50,7 +51,9 @@ def _get_gpu_memory_pynvml_all_processes(device_id: int = 0) -> int:
     return sum([proc.usedGpuMemory for proc in procs])
 
 
-def get_alloc_memory_all_devices(avail_devices=None, return_all=False) -> Union[list[int], tuple[list[int], list[int], list[int]]]:
+from typing import List, Tuple, Union
+
+def get_alloc_memory_all_devices(avail_devices=None, return_all=False) -> Union[List[int], Tuple[List[int], List[int], List[int]]]:
     """
     Returns the memory allocated on all the available devices.
     By default, tries to return the memory read from pynvml, if available.
