@@ -61,10 +61,15 @@ class KACClassifier(nn.Module):
         """
         # If the other classifier has a different structure, we need to be careful
         if isinstance(other, KACClassifier):
+            # Ensure both are on the same device
+            device = next(self.parameters()).device
+            other = other.to(device)
             # Copy the state dict, which should handle the parameter copying
             self.load_state_dict(other.state_dict())
         else:
             # Fallback: try to copy parameters directly
+            device = next(self.parameters()).device
+            other = other.to(device)
             for p_self, p_other in zip(self.parameters(), other.parameters()):
                 if p_self.shape == p_other.shape:
                     p_self.data.copy_(p_other.data)
@@ -90,6 +95,11 @@ class KACClassifier(nn.Module):
         """
         # Create a new KAC layer
         new_head = KACLayer(self.in_features, nb_classes, self.num_rbfs)
+        
+        # Move new head to the same device as existing heads
+        if len(self.heads) > 0:
+            device = next(self.heads[0].parameters()).device
+            new_head.to(device)
         
         if freeze_old:
             self.disable_training()
