@@ -30,3 +30,9 @@ class VisionTransformer(MammothVP):
         assert len([m for m in missing if 'head' not in m]) == 0, f"Missing keys: {missing}"
         assert len(unexpected) == 0, f"Unexpected keys: {unexpected}"
         return vit_model
+
+    def set_classifier_head(self, new_head):
+        """
+        Replace the classifier head with a custom module (e.g., KACClassifier).
+        """
+        self.head = new_head
