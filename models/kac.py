@@ -124,9 +124,10 @@ class KACLayer(nn.Module):
     def weight(self):
         """
         Return weight in 2D format compatible with Fisher computation.
-        Reshape from [num_classes, in_features, num_rbfs] to [num_classes, in_features * num_rbfs]
+        Use the original rbf_weights shape but take the mean over num_rbfs dimension.
         """
-        return self.rbf_weights.view(self.num_classes, -1)  # Flatten to 2D
+        # Take mean over the num_rbfs dimension to get 2D tensor
+        return self.rbf_weights.mean(dim=-1)  # [num_classes, in_features]
 
     @property
     def bias(self):
@@ -149,19 +150,10 @@ class KACLayer(nn.Module):
         Forward pass with KAC computation.
         x: [batch_size, in_features]
         """
-        batch_size = x.size(0)
-        
-        # Reshape input to match the flattened weight structure
-        # x: [batch_size, in_features] -> [batch_size, in_features, 1]
-        x_expanded = x.unsqueeze(-1).expand(-1, -1, self.num_rbfs)
-        
-        # Reshape to match the flattened weight: [batch_size, in_features * num_rbfs]
-        x_flat = x_expanded.reshape(batch_size, -1)
-        
         # Get the 2D weight for computation
-        weight_2d = self.weight  # [num_classes, in_features * num_rbfs]
+        weight_2d = self.weight  # [num_classes, in_features]
         
         # Compute linear transformation with 2D weight
-        output = F.linear(x_flat, weight_2d, self.bias)
+        output = F.linear(x, weight_2d, self.bias)
         
         return output 
