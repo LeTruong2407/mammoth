@@ -144,6 +144,7 @@ class SequentialCUB200(ContinualDataset):
     NAME = 'seq-cub200'
     SETTING = 'class-il'
     N_CLASSES_PER_TASK = 20
+    N_CLASSES = 200
     N_TASKS = 10
     SIZE = (MyCUB200.IMG_SIZE, MyCUB200.IMG_SIZE)
     MEAN, STD = [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
