@@ -52,7 +52,19 @@ With Mammoth, nothing is set in stone. You can easily add new models, datasets, 
 </p>
 
 ## ⚙️ Setup
+`
+curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
 
+
+eval "$(/root/miniconda3/bin/conda shell.bash hook)"
+
+conda create -n mammoth python=3.8 --y
+
+conda activate mammoth
+
+pip install -r requirements.txt
+`
 - 📥 Install with `pip install -r requirements.txt` or run it directly with `uv run python main.py ...`
   > **Note**: PyTorch version >= 2.1.0 is required for scaled_dot_product_attention. If you cannot support this requirement, uncomment the lines 136-139 under `scaled_dot_product_attention` in `backbone/vit.py`.
 - 🚀 Use `main.py` or `./utils/main.py` to run experiments.
