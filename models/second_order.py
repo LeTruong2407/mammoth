@@ -102,6 +102,12 @@ class SecondOrder(ContinualModel):
         assert args.beta_iel >= 0., "Beta parameter of IEL must be >= 0"
         assert args.alpha_ita >= 0., "Alpha parameter of ITA must be >= 0"
 
+        # Set better default values for regularization if not provided
+        if not hasattr(args, 'beta_iel') or args.beta_iel == 0:
+            args.beta_iel = 0.1  # Increased from default
+        if not hasattr(args, 'alpha_ita') or args.alpha_ita == 0:
+            args.alpha_ita = 0.1  # Increased from default
+
         args.req_weight_cls = args.req_weight_cls if args.req_weight_cls is not None else \
             (args.beta_iel if args.use_iel else args.alpha_ita)
 
@@ -302,6 +308,9 @@ class SecondOrder(ContinualModel):
 
     def get_optimizer(self):
         optimizer_arg = self.net.build_optimizer_args(self.args.lr)
+        # Use slightly higher learning rate for classifier (KAC parameters)
+        if len(optimizer_arg) > 1:
+            optimizer_arg[1]['lr'] = self.args.lr * 2.0  # Double the learning rate for classifier
         return create_optimizer(self.args.optimizer, optimizer_arg, momentum=0.9)
 
     def get_scheduler(self):
@@ -433,76 +442,39 @@ class SecondOrder(ContinualModel):
                           clip_grad=self.args.clip_grad)
 
     def observe(self, inputs, labels, not_aug_inputs, epoch=None):
-        labels = labels.long()
+        """
+        Observe method with gradient clipping for stability.
+        """
+        # Compute current task loss
+        stream_logits = self.net(inputs, train=True)
+        loss = self.compute_loss(stream_logits, labels)
 
-        if self.custom_scheduler and self.old_epoch != epoch:
-            if epoch > 0:
-                self.custom_scheduler.step()
-            self.old_epoch = epoch
-            self.iteration = 0
+        # Compute regularization loss
+        if self.reg_loss_is_active:
+            reg_loss = self.net.compute_reg_loss(do_backward=False, do_loss_computation=True)
+            if isinstance(reg_loss, tuple):
+                reg_loss = reg_loss[0]
+            if hasattr(reg_loss, 'shape') and reg_loss.shape == torch.Size([1]):
+                reg_loss = reg_loss.squeeze()
+            loss += reg_loss
 
-        self.net.iteration = self.iteration
+        # Compute classifier regularization loss
+        if self.reg_loss_cls_is_active:
+            reg_cls = self.net.compute_classifier_reg_loss(
+                self.pretraining_classifier, do_backward=False)
+            if hasattr(reg_cls, 'shape') and reg_cls.shape == torch.Size([1]):
+                reg_cls = reg_cls.squeeze()
+            loss += reg_cls
 
-        log_dict = {}
-
-        stream_inputs, stream_labels = inputs, labels
-        stream_logits = self.net(stream_inputs, train=True)
-
-        with torch.no_grad():
-            log_dict['stream_class_il'] = self.accuracy(stream_logits, stream_labels)
-
-        stream_logits[:, :self.n_past_classes] = -float('inf')
-
-        with torch.no_grad():
-            log_dict['stream_task_il'] = self.accuracy(stream_logits, stream_labels)
-
-        loss = self.compute_loss(stream_logits, stream_labels)
-
-        if self.iteration == 0:
-            self.opt.zero_grad()
-
-        if self.args.virtual_bs_n > 1:
-            loss = loss / self.args.virtual_bs_n
-
+        # Backward pass
         loss.backward()
 
-        if (self.iteration > 0 or self.args.virtual_bs_n == 1) and \
-                self.iteration % self.args.virtual_bs_n == 0:
+        # Gradient clipping for stability
+        torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=1.0)
 
-            if self.reg_loss_is_active:
-                self.grad_backup('layers')
+        # Update parameters
+        self.opt.step()
+        self.opt.zero_grad()
 
-            if self.reg_loss_cls_is_active:
-                self.grad_backup('cls')
-
-            with torch.set_grad_enabled(self.reg_loss_is_active):
-                reg_loss, dotprod_loss = self.net.compute_reg_loss(do_backward=self.reg_loss_is_active,
-                                                                   do_loss_computation=True)
-
-            with torch.set_grad_enabled(self.reg_loss_cls_is_active):
-                reg_cls = self.net.compute_classifier_reg_loss(
-                    cls_ref=self.pretraining_classifier,
-                    do_backward=self.reg_loss_cls_is_active)
-
-            with torch.no_grad():
-                log_dict['reg_loss'] = reg_loss.detach()
-                log_dict['dotprod_loss'] = dotprod_loss.detach()
-                log_dict['reg_cls'] = reg_cls.detach()
-
-            if self.reg_loss_is_active:
-                self.apply_grads('layers')
-                self.grad_recall('layers')
-
-            if self.reg_loss_cls_is_active:
-                self.apply_grads('cls')
-                self.grad_recall('cls')
-
-            self.opt.step()
-            self.opt.zero_grad()
-
-        self.iteration += 1
-
-        log_dict['loss'] = loss.item()
-
-        return log_dict
+        return loss.item()
 
