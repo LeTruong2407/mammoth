@@ -59,11 +59,8 @@ bash Miniconda3-latest-Linux-x86_64.sh
 
 eval "$(/root/miniconda3/bin/conda shell.bash hook)"
 
-conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
-accepted Terms of Service for https://repo.anaconda.com/pkgs/main
-accepted Terms of Service for https://repo.anaconda.com/pkgs/r
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && conda create -n mammoth python=3.8 -y
 
-conda create -n mammoth python=3.8 --y
 
 conda activate mammoth
 
