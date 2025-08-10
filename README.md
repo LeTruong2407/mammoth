@@ -251,12 +251,7 @@ python main.py --model second_order --dataset seq_cub200 --lora_r 32
 python main.py --model second_order --dataset seq_cub200 --debug_mode 1
 ```
 
-## 📚 Documentation
 
-- **Methodology**: See `KAC_ITA_methodology.tex` for detailed mathematical formulation
-- **RBF Alternatives**: See `KAC_RBF_ALTERNATIVES.md` for RBF comparison
-- **Cosine Plotting**: See `COSINE_PLOTTING_ALTERNATIVES.md` for logging options
-- **Wandb Integration**: See `KAC_WANDB_README.md` for monitoring setup
 
 ## 🤝 Contributing
 
@@ -266,24 +261,7 @@ python main.py --model second_order --dataset seq_cub200 --debug_mode 1
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 Citation
 
-If you use KARMA in your research, please cite:
-
-```bibtex
-@article{karma2024,
-  title={KARMA: Kolmogorov-Arnold Radial Memory Architecture for Continual Learning},
-  author={Your Name},
-  journal={arXiv preprint},
-  year={2024}
-}
-```
-
-## 📞 Support
-
-- **Issues**: Create an issue on GitHub
-- **Discussions**: Use GitHub Discussions
-- **Email**: Contact the maintainers directly
 
 ## 🔄 Updates
 
