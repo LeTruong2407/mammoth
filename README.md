@@ -52,8 +52,6 @@ python main.py --model second_order --dataset seq_cub200 --alpha_ita 0.02 --req_
 ```bash
 # Run with LoRA fine-tuning (recommended)
 python main.py --model second_order --dataset seq_cub200 \
-    --tuning_style lora \
-    --lora_r 16 \
     --alpha_ita 0.02 \
     --req_weight_cls 0.1 \
     --simple_reg_weight_cls 0.001 \
@@ -100,83 +98,9 @@ KARMA supports all datasets available in Mammoth:
 - `--batch_size`: Batch size (default: 64)
 - `--n_epochs`: Number of epochs per task (default: 50)
 
-## 🔧 KAC Configuration
 
-### RBF Types
-KARMA supports multiple RBF types in the KAC classifier:
-
-```python
-# Available RBF types:
-rbf_types = [
-    'gaussian',           # Default: exp(-r²/2σ²)
-    'multiquadric',       # sqrt(r² + c²)
-    'inverse_multiquadric', # 1/sqrt(r² + c²)
-    'thin_plate_spline',  # r² * log(r)
-    'polyharmonic',       # r^k (k=3)
-    'cauchy',            # 1/(1 + r²/σ²)
-    'wendland'           # (1-r)₊⁴(4r+1)
-]
-```
-
-### KAC Parameters
-- `num_rbfs`: Number of RBFs per class (default: 5)
-- `feat_expand`: Feature expansion flag (default: False)
-
-## 📈 Monitoring and Logging
-
-### Wandb Integration
-KARMA automatically logs cosine similarity metrics from KAC:
-
-```python
-# Logged metrics:
-- kac_cosine_mean: Mean cosine similarity
-- kac_cosine_max: Maximum cosine similarity  
-- kac_cosine_min: Minimum cosine similarity
-- kac_cosine_std: Standard deviation of cosine similarity
-```
-
-### Alternative Logging Options
-If you don't want to use Wandb, you can use alternative logging methods:
-
-```bash
-# Use matplotlib for plotting
-python kac_matplotlib_plot.py
-
-# Use plotly for interactive plots
-python kac_plotly_plot.py
-
-# Use tensorboard
-python kac_tensorboard_plot.py
-
-# Export to CSV/Excel
-python kac_csv_excel_plot.py
-```
 
 ## 🧪 Experimental Features
-
-### RBF Alternatives Comparison
-Compare different RBF types:
-
-```bash
-python kac_rbf_comparison.py
-```
-
-This will benchmark all available RBF types and generate comparison plots.
-
-### Advanced RBF Implementation
-Use advanced RBF features:
-
-```python
-from kac_advanced_rbfs import AdvancedKACLayer
-
-# Create KAC with specific RBF type
-kac_layer = AdvancedKACLayer(
-    in_features=768,
-    num_classes=20,
-    num_rbfs=5,
-    rbf_type='multiquadric'  # or any other type
-)
-```
 
 ## 📁 Project Structure
 
@@ -184,30 +108,17 @@ kac_layer = AdvancedKACLayer(
 mammoth/
 ├── models/
 │   ├── second_order.py          # Main KARMA implementation
-│   ├── kac.py                   # KAC classifier
-│   ├── kac_advanced_rbfs.py     # Advanced RBF implementations
+│   ├── kac.py                   # KAC      # Advanced RBF implementations
 │   └── lora_prototype_utils/    # LoRA integration
 ├── datasets/                    # Dataset implementations
 ├── backbone/                    # ViT backbone
 ├── utils/                       # Utility functions
-├── main.py                      # Main entry point
-├── KAC_ITA_methodology.tex      # LaTeX methodology
-└── KARMA_README.md             # This file
+├── main.py                      # Main 
 ```
 
 ## 🔬 Reproducing Results
 
-### Standard Benchmarks
-```bash
-# CUB-200 (reported accuracy: ~85.55%)
-python main.py --model second_order --dataset seq_cub200 --model_config best
 
-# CIFAR-100 (reported accuracy: ~89.96%)
-python main.py --model second_order --dataset seq_cifar100 --model_config best
-
-# ImageNet-R (reported accuracy: ~77.79%)
-python main.py --model second_order --dataset seq_imagenet_r --model_config best
-```
 
 ### Custom Experiments
 ```bash
@@ -221,23 +132,9 @@ python main.py --model second_order --dataset seq_cub200 --lora_r 32
 
 ## 🐛 Troubleshooting
 
-### Common Issues
 
-1. **CUDA Out of Memory**
-   ```bash
-   # Reduce batch size
-   python main.py --model second_order --dataset seq_cub200 --batch_size 32
-   
-   # Use gradient accumulation
-   python main.py --model second_order --dataset seq_cub200 --virtual_bs_n 2
-   ```
 
-2. **Import Errors**
-   ```bash
-   # Install missing dependencies
-   pip install -r requirements.txt
-   pip install -r requirements-optional.txt
-   ```
+
 
 3. **Dataset Download Issues**
    ```bash
